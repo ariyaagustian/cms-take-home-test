@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,6 @@ type AuditLog struct {
 	ActorID   *uuid.UUID `gorm:"type:uuid"`
 	Action    string
 	Resource  string
-	Meta      string `gorm:"type:jsonb;default:'{}'"`
+	Meta      json.RawMessage `gorm:"type:jsonb;default:'{}'"`
 	CreatedAt time.Time
 }

@@ -35,6 +35,8 @@ func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 	protected := api.Group("/")
 	protected.Use(middleware.AuthMiddleware(cfg))
 
+	auditRepo := repository.NewAuditRepository(db)
+
 	{
 		// ContentType handler (editor & admin)
 		ctRepo := repository.NewContentTypeRepository(db)
@@ -49,7 +51,7 @@ func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 		ctGroup.POST("/:id/fields", ct.AddField)
 
 		// Entry handler
-		entryRepo := repository.NewEntryRepository(db)
+		entryRepo := repository.NewEntryRepository(db, auditRepo)
 		entry := handler.NewEntryHandler(entryRepo)
 		entryGroup := protected.Group("/entries/:slug")
 		entryGroup.Use(middleware.RequireRole("Editor", "Admin"))
@@ -83,7 +85,7 @@ func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 		// admin.POST("/users/:id/roles", user.SetRoles)
 	}
 
-	entryRepo := repository.NewEntryRepository(db)
+	entryRepo := repository.NewEntryRepository(db, auditRepo)
 	publicHandler := handler.NewPublicHandler(entryRepo)
 	r.GET("/api/public/:slug", publicHandler.ListPublished)
 	r.GET("/api/public/:slug/:id", publicHandler.GetPublished)

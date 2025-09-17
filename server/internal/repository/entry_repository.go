@@ -17,17 +17,20 @@ type EntryRepository interface {
 	List(ctx context.Context, ctSlug string, limit, offset int) ([]model.Entry, int64, error)
 	Get(ctx context.Context, ctSlug string, id uuid.UUID) (*model.Entry, error)
 	Update(ctx context.Context, ctSlug string, id uuid.UUID, data json.RawMessage, status *string, editorID *uuid.UUID) error
-	Delete(ctx context.Context, ctSlug string, id uuid.UUID) error
+	Delete(ctx context.Context, ctSlug string, id uuid.UUID, editorID *uuid.UUID) error
 	Publish(ctx context.Context, ctSlug string, id uuid.UUID, t time.Time, editorID *uuid.UUID) error
 	Rollback(ctx context.Context, ctSlug string, id uuid.UUID, version int, editorID *uuid.UUID) error
 	ListPublished(ctx context.Context, slug string, limit, offset int, sort string) ([]model.Entry, int64, error)
 	GetPublished(ctx context.Context, slug string, id uuid.UUID) (*model.Entry, error)
 }
 
-type entryRepository struct{ db *gorm.DB }
+type entryRepository struct {
+	db    *gorm.DB
+	audit AuditRepository
+}
 
-func NewEntryRepository(db *gorm.DB) EntryRepository {
-	return &entryRepository{db: db}
+func NewEntryRepository(db *gorm.DB, audit AuditRepository) EntryRepository {
+	return &entryRepository{db: db, audit: audit}
 }
 
 func (r *entryRepository) findContentTypeID(slug string) (uuid.UUID, error) {
@@ -57,7 +60,21 @@ func (r *entryRepository) Create(ctx context.Context, slug string, e *model.Entr
 		Data:     data,
 		EditorID: editorID,
 	}
-	return r.db.WithContext(ctx).Create(&v).Error
+	if err := r.db.WithContext(ctx).Create(&v).Error; err != nil {
+		return err
+	}
+
+	// Audit log
+	if r.audit != nil {
+		_ = r.audit.Log(ctx, &model.AuditLog{
+			ActorID:  editorID,
+			Action:   "create_entry",
+			Resource: "entry:" + e.ID.String(),
+			Meta:     data,
+		})
+	}
+
+	return nil
 }
 
 func (r *entryRepository) List(ctx context.Context, slug string, limit, offset int) ([]model.Entry, int64, error) {
@@ -122,11 +139,39 @@ func (r *entryRepository) Update(ctx context.Context, slug string, id uuid.UUID,
 		Data:     data,
 		EditorID: editorID,
 	}
-	return r.db.WithContext(ctx).Create(&v).Error
+	if err := r.db.WithContext(ctx).Create(&v).Error; err != nil {
+		return err
+	}
+
+	// 👇 Tambahkan audit log
+	if r.audit != nil {
+		_ = r.audit.Log(ctx, &model.AuditLog{
+			ActorID:  editorID,
+			Action:   "update_entry",
+			Resource: "entry:" + e.ID.String(),
+			Meta:     data,
+		})
+	}
+
+	return nil
 }
 
-func (r *entryRepository) Delete(ctx context.Context, slug string, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Entry{}).Error
+func (r *entryRepository) Delete(ctx context.Context, slug string, id uuid.UUID, editorID *uuid.UUID) error {
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Entry{}).Error; err != nil {
+		return err
+	}
+
+	// 👇 Tambahkan audit log
+	if r.audit != nil {
+		_ = r.audit.Log(ctx, &model.AuditLog{
+			ActorID:  editorID,
+			Action:   "delete_entry",
+			Resource: "entry:" + id.String(),
+			Meta:     json.RawMessage(`{"deleted": true}`),
+		})
+	}
+
+	return nil
 }
 
 func (r *entryRepository) Publish(ctx context.Context, slug string, id uuid.UUID, t time.Time, editorID *uuid.UUID) error {
@@ -134,8 +179,21 @@ func (r *entryRepository) Publish(ctx context.Context, slug string, id uuid.UUID
 	if err != nil {
 		return err
 	}
-	s := "published"
-	return r.Update(ctx, slug, id, entry.Data, &s, editorID)
+	status := "published"
+	if err := r.Update(ctx, slug, id, entry.Data, &status, editorID); err != nil {
+		return err
+	}
+
+	if r.audit != nil {
+		_ = r.audit.Log(ctx, &model.AuditLog{
+			ActorID:  editorID,
+			Action:   "publish_entry",
+			Resource: "entry:" + id.String(),
+			Meta:     json.RawMessage(`{"slug": "` + slug + `"}`),
+		})
+	}
+
+	return nil
 }
 
 func (r *entryRepository) Rollback(ctx context.Context, slug string, id uuid.UUID, version int, editorID *uuid.UUID) error {
@@ -143,7 +201,25 @@ func (r *entryRepository) Rollback(ctx context.Context, slug string, id uuid.UUI
 	if err := r.db.WithContext(ctx).Where("entry_id = ? AND version = ?", id, version).First(&v).Error; err != nil {
 		return err
 	}
-	return r.Update(ctx, slug, id, v.Data, nil, editorID)
+
+	if err := r.Update(ctx, slug, id, v.Data, nil, editorID); err != nil {
+		return err
+	}
+
+	if r.audit != nil {
+		meta, _ := json.Marshal(map[string]any{
+			"slug":    slug,
+			"version": version,
+		})
+		_ = r.audit.Log(ctx, &model.AuditLog{
+			ActorID:  editorID,
+			Action:   "rollback_entry",
+			Resource: "entry:" + id.String(),
+			Meta:     meta,
+		})
+	}
+
+	return nil
 }
 
 func (r *entryRepository) ListPublished(ctx context.Context, slug string, limit, offset int, sort string) ([]model.Entry, int64, error) {

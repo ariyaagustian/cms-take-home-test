@@ -119,7 +119,15 @@ func (h *EntryHandler) Delete(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid uuid"})
 		return
 	}
-	if err := h.repo.Delete(c.Request.Context(), slug, id); err != nil {
+	var editorID *uuid.UUID
+	if v, ok := c.Get("user_id"); ok {
+		if s, ok := v.(string); ok {
+			if eid, err := uuid.Parse(s); err == nil {
+				editorID = &eid
+			}
+		}
+	}
+	if err := h.repo.Delete(c.Request.Context(), slug, id, editorID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
