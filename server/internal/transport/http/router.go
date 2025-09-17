@@ -83,9 +83,10 @@ func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 		// admin.POST("/users/:id/roles", user.SetRoles)
 	}
 
-	// Public content access (no auth)
-	// public := handler.NewPublicAPIHandler()
-	// api.GET("/public/:slug", public.GetEntries)
+	entryRepo := repository.NewEntryRepository(db)
+	publicHandler := handler.NewPublicHandler(entryRepo)
+	r.GET("/api/public/:slug", publicHandler.ListPublished)
+	r.GET("/api/public/:slug/:id", publicHandler.GetPublished)
 
 	return r
 }

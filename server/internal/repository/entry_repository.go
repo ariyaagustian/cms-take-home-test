@@ -20,6 +20,8 @@ type EntryRepository interface {
 	Delete(ctx context.Context, ctSlug string, id uuid.UUID) error
 	Publish(ctx context.Context, ctSlug string, id uuid.UUID, t time.Time, editorID *uuid.UUID) error
 	Rollback(ctx context.Context, ctSlug string, id uuid.UUID, version int, editorID *uuid.UUID) error
+	ListPublished(ctx context.Context, slug string, limit, offset int, sort string) ([]model.Entry, int64, error)
+	GetPublished(ctx context.Context, slug string, id uuid.UUID) (*model.Entry, error)
 }
 
 type entryRepository struct{ db *gorm.DB }
@@ -100,6 +102,10 @@ func (r *entryRepository) Update(ctx context.Context, slug string, id uuid.UUID,
 	e.UpdatedAt = time.Now()
 	if status != nil {
 		e.Status = *status
+		if *status == "published" && e.PublishedAt == nil {
+			now := time.Now()
+			e.PublishedAt = &now
+		}
 	}
 	if err := r.db.WithContext(ctx).Save(e).Error; err != nil {
 		return err
@@ -138,4 +144,45 @@ func (r *entryRepository) Rollback(ctx context.Context, slug string, id uuid.UUI
 		return err
 	}
 	return r.Update(ctx, slug, id, v.Data, nil, editorID)
+}
+
+func (r *entryRepository) ListPublished(ctx context.Context, slug string, limit, offset int, sort string) ([]model.Entry, int64, error) {
+	ctID, err := r.findContentTypeID(slug)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var items []model.Entry
+	var total int64
+
+	db := r.db.WithContext(ctx).Model(&model.Entry{}).
+		Where("content_type_id = ? AND status = ? AND published_at <= ?", ctID, "published", time.Now())
+
+	db.Count(&total)
+
+	if sort == "-published_at" {
+		db = db.Order("published_at desc")
+	} else {
+		db = db.Order("published_at asc")
+	}
+
+	if err := db.Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return items, total, nil
+}
+
+func (r *entryRepository) GetPublished(ctx context.Context, slug string, id uuid.UUID) (*model.Entry, error) {
+	ctID, err := r.findContentTypeID(slug)
+	if err != nil {
+		return nil, err
+	}
+	var e model.Entry
+	if err := r.db.WithContext(ctx).
+		Where("content_type_id = ? AND id = ? AND status = ? AND published_at <= ?", ctID, id, "published", time.Now()).
+		First(&e).Error; err != nil {
+		return nil, err
+	}
+	return &e, nil
 }
