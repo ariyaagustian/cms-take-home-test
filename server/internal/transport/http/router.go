@@ -1,0 +1,91 @@
+package http
+
+import (
+	"net/http"
+
+	"cms/server/internal/config"
+	"cms/server/internal/repository"
+	"cms/server/internal/transport/http/handler"
+	"cms/server/internal/transport/http/middleware"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
+
+func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
+	r := gin.Default()
+
+	// Health check
+	r.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Swagger UI (opsional)
+	// r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Public API
+	api := r.Group("/api")
+
+	// Auth endpoints
+	auth := handler.NewAuthHandler(cfg, db)
+	api.POST("/auth/login", auth.Login)
+	api.POST("/auth/register", auth.Register) // demo
+
+	// Protected routes (require JWT)
+	protected := api.Group("/")
+	protected.Use(middleware.AuthMiddleware(cfg))
+
+	{
+		// ContentType handler (editor & admin)
+		ctRepo := repository.NewContentTypeRepository(db)
+		ct := handler.NewContentTypeHandler(ctRepo)
+		ctGroup := protected.Group("/content-types")
+		ctGroup.Use(middleware.RequireRole("Editor", "Admin"))
+		ctGroup.POST("", ct.Create)
+		ctGroup.GET("", ct.List)
+		ctGroup.GET("/:id", ct.Detail)
+		ctGroup.PUT("/:id", ct.Update)
+		ctGroup.DELETE("/:id", ct.Delete)
+		ctGroup.POST("/:id/fields", ct.AddField)
+
+		// Entry handler
+		entryRepo := repository.NewEntryRepository(db)
+		entry := handler.NewEntryHandler(entryRepo)
+		entryGroup := protected.Group("/entries/:slug")
+		entryGroup.Use(middleware.RequireRole("Editor", "Admin"))
+		entryGroup.POST("", entry.Create)
+		entryGroup.GET("", entry.List)
+		entryGroup.GET("/:id", entry.Detail)
+		entryGroup.PUT("/:id", entry.Update)
+		entryGroup.DELETE("/:id", entry.Delete)
+		entryGroup.POST("/:id/publish", entry.Publish)
+		entryGroup.POST("/:id/rollback/:version", entry.Rollback)
+
+		// // Media handler
+		// media := handler.NewMediaHandler()
+		// mediaGroup := protected.Group("/media")
+		// mediaGroup.Use(middleware.RequireRole("editor", "admin"))
+		// mediaGroup.POST("", media.Upload)
+		// mediaGroup.GET("", media.List)
+		// mediaGroup.DELETE("/:id", media.Delete)
+
+		// // Admin-only endpoints
+		// admin := protected.Group("/admin")
+		// admin.Use(middleware.RequireRole("admin"))
+
+		// role := handler.NewRoleHandler()
+		// admin.GET("/roles", role.List)
+		// admin.POST("/roles", role.Create)
+
+		// user := handler.NewUserHandler()
+		// admin.GET("/users", user.List)
+		// admin.GET("/users/:id/roles", user.GetRoles)
+		// admin.POST("/users/:id/roles", user.SetRoles)
+	}
+
+	// Public content access (no auth)
+	// public := handler.NewPublicAPIHandler()
+	// api.GET("/public/:slug", public.GetEntries)
+
+	return r
+}

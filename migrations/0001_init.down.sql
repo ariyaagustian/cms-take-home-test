@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS media_assets;
+DROP TABLE IF EXISTS entry_versions;
+DROP TABLE IF EXISTS entries;
+DROP TABLE IF EXISTS content_fields;
+DROP TABLE IF EXISTS content_types;
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS users;
