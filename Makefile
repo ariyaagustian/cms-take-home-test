@@ -7,6 +7,9 @@ SHELL := /bin/bash
 
 dev:
 	docker compose up -d db redis minio imagor
+	@echo "⌛ Menunggu 5 detik agar service siap..."
+	sleep 5
+	@echo "🚀 Menjalankan Go App..."
 	cd server && go run ./cmd/api
 
 migrate-up:
@@ -24,14 +27,17 @@ test:
 e2e:
 	cd tests/e2e && go test -v
 
-build:
-	docker compose build
+build-backend:
+	cd server && docker compose build
 
 up:
 	docker compose up -d
 
 down:
 	docker compose down
+
+run-backend-image:
+	cd server && docker compose up -d
 
 fmt:
 	gofmt -s -w ./server
