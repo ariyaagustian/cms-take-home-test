@@ -75,7 +75,6 @@
 - **PostgreSQL** – database utama
 - **Redis** – caching (opsional)
 - **MinIO** – penyimpanan file/media
-- **Imagor** – image resizer server
 
 ---
 
@@ -126,4 +125,9 @@
   - `GET /api/public/:slug`
   - `GET /api/public/:slug/:id`
 
----
+## 📌 TODO
+
+- Masih ada beberapa fitur yang perlu diselesaikan:
+  - CRUD Entries di Frontend (React/Vite).
+  - Testing: integration test, unit test, dan e2e test lengkap.
+  - Schedule worker (Asynq) untuk published_at agar entry bisa otomatis dipublish sesuai jadwal.
