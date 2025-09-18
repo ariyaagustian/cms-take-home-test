@@ -38,6 +38,32 @@ services:
     volumes:
       - imagor_data:/data
 
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    depends_on:
+      - db
+      - redis
+      - minio
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: cms
+      DB_PASS: secret
+      DB_NAME: cmsdb
+      DB_SSLMODE: disable
+
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: media
+      MINIO_USE_SSL: false
+
+      APP_PORT: 8080
+    ports:
+      - "8080:8080"
+
 volumes:
   db_data:
   minio_data:

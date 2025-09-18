@@ -25,7 +25,7 @@ e2e:
 	cd tests/e2e && go test -v
 
 build:
-	docker build -t cms-gin-server:latest ./server
+	docker compose build
 
 up:
 	docker compose up -d
