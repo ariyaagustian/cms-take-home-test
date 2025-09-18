@@ -6,7 +6,7 @@ SHELL := /bin/bash
 .PHONY: dev migrate-up migrate-down seed test e2e build up down fmt lint
 
 dev:
-	docker compose up -d db redis minio imagor
+	docker compose up -d db redis minio
 	@echo "⌛ Menunggu 5 detik agar service siap..."
 	sleep 5
 	@echo "🚀 Menjalankan Go App..."

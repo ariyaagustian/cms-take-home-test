@@ -1,4 +1,4 @@
-# CMS Fullstack (Go + Gin + Postgres + Redis + MinIO + Imagor)
+# CMS Fullstack (Go + Gin + Postgres + Redis + MinIO)
 
 > Proyek CMS fullstack berbasis Go. Gunakan `make` untuk menjalankan server & dependensi secara efisien.
 
@@ -12,7 +12,7 @@
    make dev
    ```
    Ini akan:
-   - Menjalankan service `db`, `redis`, `minio`, dan `imagor`
+   - Menjalankan service `db`, `redis`, `minio`
    - Menunggu 5 detik agar semua service siap
    - Menjalankan backend menggunakan `go run`
 

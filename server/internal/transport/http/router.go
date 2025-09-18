@@ -83,17 +83,19 @@ func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 		mediaGroup.DELETE("/:id", media.Delete)
 
 		// // Admin-only endpoints
-		// admin := protected.Group("/admin")
-		// admin.Use(middleware.RequireRole("admin"))
+		admin := protected.Group("/admin")
+		admin.Use(middleware.RequireRole("Admin"))
 
-		// role := handler.NewRoleHandler()
-		// admin.GET("/roles", role.List)
-		// admin.POST("/roles", role.Create)
+		roleRepo := repository.NewRoleRepository(db)
+		role := handler.NewRoleHandler(roleRepo) // atau repo khusus
+		admin.GET("/roles", role.List)
+		admin.POST("/roles", role.Create)
 
-		// user := handler.NewUserHandler()
-		// admin.GET("/users", user.List)
-		// admin.GET("/users/:id/roles", user.GetRoles)
-		// admin.POST("/users/:id/roles", user.SetRoles)
+		userRepo := repository.NewUserRepository(db)
+		user := handler.NewUserHandler(userRepo)
+		admin.GET("/users", user.List)
+		admin.GET("/users/:id/roles", user.GetRoles)
+		admin.POST("/users/:id/roles", user.SetRoles)
 	}
 
 	entryRepo := repository.NewEntryRepository(db, auditRepo)
