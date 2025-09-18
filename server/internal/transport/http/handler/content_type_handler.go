@@ -84,7 +84,14 @@ func (h *ContentTypeHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.Status(http.StatusOK)
+	// response updated content type
+	ct, err := h.repo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": ct})
 }
 
 func (h *ContentTypeHandler) Delete(c *gin.Context) {
@@ -97,7 +104,7 @@ func (h *ContentTypeHandler) Delete(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, gin.H{"message": "content type deleted"})
 }
 
 func (h *ContentTypeHandler) AddField(c *gin.Context) {
