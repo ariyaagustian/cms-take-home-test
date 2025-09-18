@@ -60,6 +60,7 @@
 | `make dev`              | Jalankan semua service & Go app (dev mode)   |
 | `make build-backend`    | Build image backend menggunakan Docker       |
 | `make run-backend-image`| Jalankan backend dari image Docker           |
+| `make run-frontend-dev` | Jalankan frontend dari local                 |
 | `make up`               | Jalankan semua container                     |
 | `make down`             | Hentikan semua container                     |
 | `make migrate-up`       | Jalankan migrasi database                    |
