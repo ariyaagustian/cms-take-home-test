@@ -2,6 +2,9 @@ package http
 
 import (
 	"net/http"
+	"time"
+
+	"github.com/gin-contrib/cors"
 
 	"cms/server/internal/config"
 	"cms/server/internal/repository"
@@ -15,6 +18,16 @@ import (
 
 func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 	r := gin.Default()
+
+	// Middleware CORS
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Health check
 	r.GET("/healthz", func(c *gin.Context) {
