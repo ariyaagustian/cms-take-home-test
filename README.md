@@ -82,6 +82,7 @@
 
 ```
 .
+├── admin-ui/           # Kode Frontend (Vite + Tailwindcss)
 ├── server/             # Kode backend (Gin)
 │   └── cmd/api         # Entry point aplikasi
 │   └── internal/       # Model, repo, service, handler

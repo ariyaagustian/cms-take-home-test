@@ -39,5 +39,8 @@ down:
 run-backend-image:
 	cd server && docker compose up -d
 
+run-frontend-dev:
+	cd admin-ui && npm install && npm run dev
+
 fmt:
 	gofmt -s -w ./server
