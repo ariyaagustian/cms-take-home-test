@@ -1,4 +1,4 @@
-# CMS Fullstack (Go + Gin + Postgres + Redis + MinIO)
+# CMS Fullstack (Go + Gin + Postgres + Redis + MinIO + Vite + Tailwindcss)
 
 > Proyek CMS fullstack berbasis Go. Gunakan `make` untuk menjalankan server & dependensi secara efisien.
 
