@@ -50,6 +50,14 @@ func (r *entryRepository) Create(ctx context.Context, slug string, e *model.Entr
 	e.Data = data
 	e.CreatedBy = editorID
 	e.UpdatedBy = editorID
+
+	if e.Status == "published" {
+		now := time.Now()
+		e.PublishedAt = &now
+	} else {
+		e.PublishedAt = nil
+	}
+
 	if err := r.db.WithContext(ctx).Create(e).Error; err != nil {
 		return err
 	}

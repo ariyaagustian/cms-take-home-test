@@ -1,13 +1,62 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { FileText, Users, Edit } from "lucide-react";
 import { Link } from "react-router-dom";
+import { apiClient } from "@/lib/api";
+
+interface Article {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+}
 
 const Index = () => {
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadArticles = async () => {
+      try {
+        setLoading(true);
+        // fetch langsung tanpa react-query
+        const res = await apiClient.get<any>("/api/public/post?limit=10");
+        console.log("API response:", res);
+
+        // handle struktur JSON
+        const rawData = Array.isArray(res.data) ? res.data : res.data?.data || [];
+
+        const mapped = rawData.map((raw: any) => ({
+          id: raw.ID,
+          slug: raw.Slug,
+          title: raw.Data?.title ?? "Untitled",
+          description: raw.Data?.description ?? "",
+          publishedAt: raw.PublishedAt,
+        }));
+
+        setArticles(mapped);
+      } catch (err) {
+        console.error("Failed to fetch articles", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadArticles();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5">
-      {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
+        {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
             Content Management System
@@ -62,38 +111,37 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Recent Content */}
+        {/* Latest Articles */}
         <Card>
           <CardHeader>
             <CardTitle>Latest Articles</CardTitle>
-            <CardDescription>
-              Recent content from our CMS
-            </CardDescription>
+            <CardDescription>Recent content from our CMS</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                <div>
-                  <h3 className="font-semibold">Getting Started with CMS</h3>
-                  <p className="text-sm text-muted-foreground">Learn how to use this content management system</p>
-                </div>
-                <span className="text-sm text-muted-foreground">2 days ago</span>
+            {loading ? (
+              <p className="text-muted-foreground text-sm">Loading...</p>
+            ) : articles.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No articles published yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {articles.map((a) => (
+                  <div
+                    key={a.id} // ✅ gunakan id biar unik
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <h3 className="font-semibold">{a.title}</h3>
+                      <p className="text-sm text-muted-foreground">{a.description}</p>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(a.publishedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                <div>
-                  <h3 className="font-semibold">Building Custom Content Types</h3>
-                  <p className="text-sm text-muted-foreground">Create flexible content structures for your needs</p>
-                </div>
-                <span className="text-sm text-muted-foreground">1 week ago</span>
-              </div>
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                <div>
-                  <h3 className="font-semibold">Managing Users and Permissions</h3>
-                  <p className="text-sm text-muted-foreground">Set up roles and manage access control</p>
-                </div>
-                <span className="text-sm text-muted-foreground">2 weeks ago</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
