@@ -59,13 +59,15 @@ export function mapContentType(raw: RawContentType): ContentType {
     slug: raw.Slug,
     createdAt: raw.CreatedAt,
     updatedAt: raw.UpdatedAt,
-    fields: raw.Fields.map((f) => ({
-      id: f.ID,
-      contentTypeId: f.ContentTypeID,
-      name: f.Name,
-      kind: f.Kind,
-      options: f.Options,
-    })),
+    fields: Array.isArray(raw.Fields)
+      ? raw.Fields.map((f) => ({
+          id: f.ID,
+          contentTypeId: f.ContentTypeID,
+          name: f.Name,
+          kind: f.Kind,
+          options: f.Options,
+        }))
+      : [], // ✅ kalau null → jadi array kosong
   };
 }
 

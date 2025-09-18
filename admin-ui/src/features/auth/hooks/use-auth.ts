@@ -11,15 +11,13 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginRequest) => authService.login(credentials),
     onSuccess: (data) => {
-      console.log('Login successful:', data);
       toast({
         title: "Welcome back!",
         description: `Logged in as ${data.user.name}`,
       });
-      navigate('/admin');
+      navigate("/admin", { replace: true });
     },
     onError: (error: Error) => {
-      console.error('Login error:', error);
       toast({
         title: "Login failed",
         description: error.message,
@@ -35,7 +33,7 @@ export const useAuth = () => {
         title: "Account created!",
         description: `Welcome ${data.user.name}`,
       });
-      navigate('/admin');
+      navigate("/admin", { replace: true });
     },
     onError: (error: Error) => {
       toast({
@@ -53,7 +51,7 @@ export const useAuth = () => {
       title: "Logged out",
       description: "You have been successfully logged out",
     });
-    navigate('/login');
+    navigate("/login", { replace: true });
   };
 
   return {
