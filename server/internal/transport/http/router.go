@@ -7,6 +7,7 @@ import (
 	"cms/server/internal/repository"
 	"cms/server/internal/transport/http/handler"
 	"cms/server/internal/transport/http/middleware"
+	"cms/server/pkg/minio"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -63,13 +64,23 @@ func NewRouter(cfg config.Config, db *gorm.DB) *gin.Engine {
 		entryGroup.POST("/:id/publish", entry.Publish)
 		entryGroup.POST("/:id/rollback/:version", entry.Rollback)
 
-		// // Media handler
-		// media := handler.NewMediaHandler()
-		// mediaGroup := protected.Group("/media")
-		// mediaGroup.Use(middleware.RequireRole("editor", "admin"))
-		// mediaGroup.POST("", media.Upload)
-		// mediaGroup.GET("", media.List)
-		// mediaGroup.DELETE("/:id", media.Delete)
+		// Media handler
+		minioClient := minio.New(
+			cfg.MinIOEndpoint,
+			cfg.MinIOAccessKey,
+			cfg.MinIOSecretKey,
+			cfg.MinIOBucket,
+			cfg.MinIOUseSSL,
+		)
+		mediaRepo := repository.NewMediaRepository(db)
+		media := handler.NewMediaHandler(minioClient, mediaRepo)
+
+		mediaGroup := protected.Group("/media")
+		mediaGroup.Use(middleware.RequireRole("Editor", "Admin"))
+		mediaGroup.POST("", media.Upload)
+		mediaGroup.GET("/preview/:id", media.Preview)
+		mediaGroup.GET("", media.List)
+		mediaGroup.DELETE("/:id", media.Delete)
 
 		// // Admin-only endpoints
 		// admin := protected.Group("/admin")

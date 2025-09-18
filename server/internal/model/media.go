@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,7 +13,7 @@ type MediaAsset struct {
 	Mime      string
 	SizeBytes int64
 	URL       string
-	Meta      string     `gorm:"type:jsonb;default:'{}'"`
-	CreatedBy *uuid.UUID `gorm:"type:uuid"`
+	Meta      json.RawMessage `gorm:"type:jsonb;default:'{}'"`
+	CreatedBy *uuid.UUID      `gorm:"type:uuid"`
 	CreatedAt time.Time
 }
